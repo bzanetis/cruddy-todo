@@ -43,7 +43,6 @@ const writeCounter = (count, callback) => {
 exports.getNextUniqueId = (callback) => {
   readCounter((err, data) => {
     let newId = data + 1;
-    console.log(newId);
 
     writeCounter(newId, (err, data) => {
       callback(null, data);
