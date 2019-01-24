@@ -8,12 +8,9 @@ var items = {};
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
-
   counter.getNextUniqueId((err, data) => {
     var id = data;
     var newFilePath = exports.dataDir + '/' + id + '.txt';
-    console.log(id);
-    console.log(newFilePath);
 
     fs.writeFile(newFilePath, text, (err) => {
       if (err) {
@@ -27,10 +24,19 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  var data = _.map(items, (text, id) => {
-    return { id, text };
+  fs.readdir(exports.dataDir, (err, files) => {
+    if (err) {
+      throw ('error reading files');
+    } else {
+      var data = _.map(files, (text, id) => {
+        text = text.split('.')[0];
+        return { id: text, text: text };
+      });
+      console.log(data);
+
+      callback(null, data);
+    }
   });
-  callback(null, data);
 };
 
 exports.readOne = (id, callback) => {
