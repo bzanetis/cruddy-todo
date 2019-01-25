@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
+const Promise = require('bluebird');
+
 
 var items = {};
 
@@ -24,15 +26,32 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  fs.readdir(exports.dataDir, (err, files) => {
+  var readFileAsync = Promise.promisify(fs.readFile);
+  var fileNames = [];
+  var promises = [];
+
+  fs.readdir(exports.dataDir, (err, items) => {
     if (err) {
       throw ('error reading files');
     } else {
-      var data = _.map(files, (text, id) => {
-        text = text.split('.')[0];
-        return { id: text, text: text };
+
+      var directorySize = items.length;
+      for (var i = 0; i < directorySize; i++) {
+        fileNames.push(items[i]);
+        promises.push(readFileAsync(exports.dataDir + '/' + items[i], 'utf8'));
+      }
+
+      var data = [];
+      Promise.all(promises).then((fileContents) => {
+        for (var i = 0; i < directorySize; i++) {
+          data.push({
+            id: fileNames[i].split('.')[0],
+            text: fileContents[i]
+          });
+        }
+      }).then(() => {
+        callback(null, data);
       });
-      callback(null, data);
     }
   });
 };
@@ -70,7 +89,7 @@ exports.update = (id, text, callback) => {
 exports.delete = (id, callback) => {
   var filePath = exports.dataDir + '/' + id + '.txt';
 
-    fs.readFile(filePath, 'utf8', (err, fileData) => {
+  fs.readFile(filePath, 'utf8', (err, fileData) => {
     if (err) {
       callback(err, `No item with id: ${id}`);
     } else {
